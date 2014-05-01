@@ -1,0 +1,19 @@
+#!/usr/bin/env ruby
+
+require File.expand_path("../../hanoi", __FILE__)
+require File.expand_path("../../hanoi_helpers", __FILE__)
+
+def main
+	game = Game.new(5, 3)
+	
+	render(game)
+
+	game = Solver.new(game).solve do |game|
+		render(game)
+		sleep(0.4)
+	end
+	
+	puts "Automated run complete. Goodbye!"
+end
+
+main
