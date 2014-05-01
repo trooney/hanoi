@@ -4,10 +4,7 @@ require File.expand_path("../../hanoi", __FILE__)
 require File.expand_path("../../hanoi_helpers", __FILE__)
 
 def main
-	# game = Game.new
-	# game = Game.new(1, 2)
-	# game = Game.new(12, 3)
-	game = Game.new(3, 3)
+	game = Game.new(2, 3)
 	
 	render(game)
 

@@ -1,83 +1,101 @@
 require File.expand_path("../spec_helper", __FILE__)
 
 describe Tower do
-	let(:tower) { Tower.new }
+	let(:tower) { Tower.new(1, [1]) }
 	after(:each) { tower = nil }
 
-	it "#add" do
-		expect(tower.add(1).top).to eq(1)
+	it "#ring_count" do
+		expect(tower.ring_count).to eq(1)
 	end  
 
 	it "#add" do
-		expect(tower.add(1).size).to eq(1)
+		expect(tower.add('foo').top).to eq('foo')
+	end  
+
+	it "#add" do
+		expect(tower.add('foo').ring_count).to eq(2)
 	end
 
 	it "#remove" do
-		expect(tower.add(1).remove.size).to eq(0)
+		expect(tower.remove.ring_count).to eq(0)
+	end
+
+	it "#full?" do
+		expect(tower.full?).to eq(true)
+	end
+
+	context "#sorted?" do
+		it "#sorted?" do
+			tower = Tower.new(2, [2, 1])
+			expect(tower.sorted?).to eq(true)
+		end
+
+		it "#sorted? is false when unsorted" do
+			tower = Tower.new(2, [1, 2])
+			expect(tower.sorted?).to eq(false)
+		end
 	end
 
 end
 
 describe Board do
 
-	let(:board) { Board.new([ Tower.new([1]), Tower.new ]) }
-
-	it "height" do 
-		result = Board.new([], 1).height
-		expect(result).to eq(1)
+	it "only creates board with 2 or more towers" do
+		expect { Board.new }.to raise_error
 	end
 
 	context "#won?" do
-		let(:tower_of_0) { Tower.new }
-		let(:tower_of_1) { Tower.new([1]) }
-		let(:tower_of_2_sorted) { Tower.new([2, 1]) }
-		let(:tower_of_2_unsorted) { Tower.new([1, 2]) }
+		let(:tower_empty) { Tower.new(2) }
+		let(:tower_sorted) { Tower.new(2, [2, 1]) }
+		let(:tower_unsorted) { Tower.new(2, [1, 2]) }
 
-		it "is true when all rings are on the right-most ring" do
-			board = Board.new([ tower_of_1 ], 1)
+		it "is true when all rings are moved to a new ring" do
+			board = Board.new([ tower_empty, tower_sorted ])
 			expect(board.won?).to eq(true)
 		end
 
-		it "is true when all rings are on the right-most ring are sorted" do
-			board = Board.new([ tower_of_0, tower_of_2_sorted ], 2)
+		it "is true when all rings are sorted" do
+			board = Board.new([ tower_empty, tower_sorted ])
 			expect(board.won?).to eq(true)
 		end
 
-		it "is false when rings on the right-most side are _not_ sorted" do
-			board = Board.new([ tower_of_2_unsorted ], 2)
+		it "is false when rings rings are not sorted" do
+			board = Board.new([ tower_empty, tower_unsorted ])
 			expect(board.won?).to eq(false)
 		end
 	end
 
 	context	"#move" do
+		let(:tower_a) { Tower.new(3, [3, 2]) }
+		let(:tower_b) { Tower.new(3, [1]) }
+		let(:tower_c) { Tower.new(3, []) }
 
-		let(:board) { Board.new([ Tower.new([1]), Tower.new ]) }
+		let(:board) { Board.new([ tower_a, tower_b, tower_c ]) }
+		after(:each) { board = nil }
 
-		it "removes ring from t1" do
-			b = board.move(0, 1)
-			expect(b.towers[0].size).to eq(0)
+		it "removes a ring" do
+			b = board.move(1, 0)
+			expect(b.rings_on_tower(1)).to eq(0)
 		end
 		it "adds ring to t2" do
-			b = board.move(0, 1)
-			expect(b.towers[1].size).to eq(1)
+			b = board.move(1, 0)
+			expect(b.rings_on_tower(0)).to eq(3)
 		end
 		it "ignores moves on empty rings" do
-			b = board.move(1, 0)
-			expect(b.towers[0].size).to eq(1)
+			b = board.move(2, 0)
+			expect(b.rings_on_tower(0)).to eq(2)
 		end
 		it "enforces order" do
-			board = Board.new([ Tower.new([3, 2]), Tower.new([1]) ])
-			board.move(0, 1)
-			expect(board.towers[0].size).to eq(2)
+			b = board.move(0, 1)
+			expect(b.rings_on_tower(1)).to eq(1)
 		end
-		
 	end
 	
 end
 
 describe Transformer do
-	let (:tower_of_1) { Tower.new([1]) }
-	let (:tower_of_2) { Tower.new([2, 1]) }
+	let (:tower_of_1) { Tower.new(2, [1]) }
+	let (:tower_of_2) { Tower.new(2, [2, 1]) }
 
 	context "#pad_rings" do
 		it "only pads when length > rings.length" do
@@ -85,8 +103,8 @@ describe Transformer do
 			expect(result).to eq([])
 		end
 		it "pads rings to a given length" do
-			result = Transformer.pad_rings([], 1).length
-			expect(result).to eq(1)
+			result = Transformer.pad_rings([], 1)
+			expect(result.length).to eq(1)
 		end
 	end
 
@@ -110,8 +128,8 @@ describe Transformer do
 end
 
 describe View do
-	let (:tower_of_1) { Tower.new([1]) }
-	let (:tower_of_2) { Tower.new([2, 1]) }
+	let (:tower_of_1) { Tower.new(1, [1]) }
+	let (:tower_of_2) { Tower.new(2, [2, 1]) }
 
 	context '#render_thing' do
 		it 'renders a thing of 1 for width of 1' do 
@@ -180,15 +198,44 @@ describe Game do
 		expect(result).to eq(true)
 	end
 
+	context "#create_board" do
+		it "returns a board" do
+			result = Game.create_board(3, 3)
+			expect(result.class).to eq(Board)
+		end
+	end
+
 	context "#create_tower" do
 		it "returns an empty tower" do
-			result = Game.create_tower.size
+			result = Game.create_tower(3).ring_count
 			expect(result).to eq(0)
 		end
 
 		it "returns with 3 pieces" do
-			result = Game.create_tower(3).size
+			result = Game.create_tower(3, 3).ring_count
 			expect(result).to eq(3)
 		end
 	end
+
+end
+
+describe Solver do
+	let (:simple_game) { Game.new(1, 3) }
+	let (:normal_game) { Game.new(3, 3) }
+
+	it "#solve acts on the board" do
+		game = Solver.new(simple_game).solve
+
+		board = game.board
+
+		expect(board.rings_on_tower(0)).to eq(0)
+		expect(board.rings_on_tower(1)).to eq(1)
+	end
+
+	it "#solve solves a board" do
+		game = Solver.new(normal_game).solve
+
+		expect(game.won?).to eq(true)
+	end
+
 end

@@ -1,57 +1,67 @@
 class Board
 
-	attr_reader :towers, :height
+	attr_reader :towers
 	
-	def initialize(towers, height = 0)
+	def initialize(towers = [])
 		@towers = towers
 
-		if height > 0
-			@height = height
-		else
-			@height = towers.first.size 
+		if towers.length <= 1
+			raise ArgumentError.new("Board must contain 2 or more towers")
 		end
 	end
 
+	def rings_on_tower(t)
+		towers[t].ring_count
+	end
+
+	def has_rings(t)
+		rings_on_tower(t) > 0
+	end
+
 	def move(t1, t2, enforce_order = true)
-		ring = towers[t1].top
+
+		return self unless has_rings(t1)
+
+		r1 = towers[t1].top
+		r2 = towers[t2].top
 		
-		return self if ring.nil? 
-
-		if enforce_order
-
-			t2_ring = towers[t2].top
-
-			if t2_ring.nil? == false && t2_ring < ring
-				return self
-			end
+		if enforce_order && has_rings(t2)  && r1 > r2
+			return self
 		end
 
 		new_towers = towers.map do |tower|
 			if tower == towers[t1]
 				tower.remove
 			elsif tower == towers[t2]
-				tower.add(ring)
+				tower.add(r1)
 			else
 				tower
 			end
 		end
 
-		Board.new(new_towers, @height)
+		Board.new(new_towers)
 	end
 
 	def won?
-		return false unless (towers.last.size == @height)
-		return false unless (towers.last.rings == towers.last.rings.sort.reverse)
-		true
+		# return false unless (towers.last.size == @height)
+		# return false unless (towers.last.rings == towers.last.rings.sort.reverse)
+		# true
+
+		tower_states = @towers[1..-1].map do |tower|
+			tower.full? && tower.sorted?
+		end
+
+		tower_states.include? true
 	end
 
 end
 
 class Tower
 
-	attr_reader :rings
+	attr_reader :height, :rings
 
-	def initialize(rings = [])
+	def initialize(height, rings = [])
+		@height = height
 		@rings = rings
 	end
 
@@ -60,20 +70,29 @@ class Tower
 	end
 	
 	def add(ring)
-		Tower.new(@rings + [ring])
+		Tower.new(@height, @rings + [ring])
 	end
 
 	def remove
-		Tower.new(@rings[0..-2])
+		Tower.new(@height, @rings[0..-2])
 	end
 
-	def size
+	def ring_count
 		@rings.length
+	end
+
+	def full?
+		@height == @rings.length
+	end
+
+	def sorted?
+		@rings == @rings.sort.reverse
 	end
 
 end
 
 class Transformer
+
 	def self.pad_rings(rings, height, padder = nil)
 		return rings if rings.length == height
 		rings + Array.new((height - rings.length), padder)
@@ -97,6 +116,7 @@ class Transformer
 end
 
 class View
+
 	@GUTTER_CHAR = "\s"
 	@RING_CHAR = "*"
 	@PEG_CHAR = "|"
@@ -117,23 +137,25 @@ class View
 
 	def self.render_board(board)
 		t = board.towers
-		h = board.height
+		h = board.towers.first.height
 		rows = Transformer.towers_to_rows(t, h)
 
 		# rows.map { |r| r.map { |c| c.nil? ? @PEG_CHAR : c }.join("\s") }.reverse.join("\n")
 		rows.map { |r| r.map { |c| c.nil? ? self.render_peg(h) : self.render_ring(c, h) }.join("\s") }.reverse.join("\n")
 	end
+
 end
 
 class Game 
-	attr_reader :board, :move_counter
 
-	def initialize(ring_count = 8, tower_count = 3, enforce_order = true)
-		@ring_count = ring_count
-		@tower_count = tower_count
+	attr_reader :height, :towers, :board, :move_counter
+
+	def initialize(height = 8, towers = 3, enforce_order = true)
+		@height = height
+		@towers = towers
 		@enforce_order = enforce_order
 
-		@board = Game.create_board(ring_count, tower_count)
+		@board = Game.create_board(height, towers)
 		@move_counter = 0
 	end
 
@@ -147,15 +169,50 @@ class Game
 		@board.won?
 	end
 
-	def self.create_board(ring_count, tower_count)
-		towers = Array.new(tower_count - 1) { Tower.new }
-		towers.unshift(self.create_tower(ring_count))
+	def self.create_board(height, towers)
+		towers = Array.new(towers - 1) { self.create_tower(height) }
+		towers.unshift(self.create_tower(height, height))
 
-		Board.new(towers, ring_count)
+		Board.new(towers)
 	end
 
-	def self.create_tower(ring_count = 0)
+	def self.create_tower(height, ring_count = 0)
 		rings = ring_count <= 0 ? [] : Array(1..ring_count).reverse
-		Tower.new(rings)
+		Tower.new(height, rings)
 	end
+
+end
+
+# Recursive strategy
+# If tower size is onne
+#   Move from start to finish
+# else 
+#   Move a tower of size n - 1 from start to temp. 
+#   Move a single disk from start to finish.
+#   Move a tower of size n - 1 from temp to finish.
+
+class Solver
+
+	def initialize(game, delay = 0)
+		@game = game
+	end
+	
+	def solve(&block)
+		move_tower(@game.height, 0, 1, 2, &block)
+	end
+
+	def move_tower(rings, t_start, t_finish, t_temp, &block)
+		if rings == 1
+			@game = @game.move(t_start, t_finish)
+			yield(@game) if block_given?
+			@game
+		else
+			@game = move_tower(rings - 1, t_start, t_temp, t_finish, &block)
+			@game = @game.move(t_start, t_finish)
+			yield(@game) if block_given?
+			@game = move_tower(rings - 1, t_temp, t_finish, t_start, &block)
+			@game
+		end
+	end
+
 end
