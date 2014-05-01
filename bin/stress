@@ -1,0 +1,22 @@
+#!/usr/bin/env ruby
+
+require File.expand_path("../../hanoi", __FILE__)
+require File.expand_path("../../hanoi_helpers", __FILE__)
+
+def main
+	game = Game.new(12, 3, false)
+	
+	render(game)
+
+	count = 1000
+	while count > 0 && count -= 1
+		t1, t2 = [0, 1, 2].shuffle
+		game.move(t1, t2)
+		render(game)
+		sleep(0.05)
+	end	
+
+	puts "Automated run complete. Goodbye!"
+end
+
+main

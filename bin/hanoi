@@ -1,0 +1,40 @@
+#!/usr/bin/env ruby
+
+require File.expand_path("../../hanoi", __FILE__)
+require File.expand_path("../../hanoi_helpers", __FILE__)
+
+def main
+	# game = Game.new
+	# game = Game.new(1, 2)
+	# game = Game.new(12, 3)
+	game = Game.new(3, 3)
+	
+	render(game)
+
+	while true
+		input = gets.chomp
+
+		if ['q', 'quit'].include?(input)
+			puts "Goodbye!"
+			break
+		end
+
+		t1, t2 = parse_move(input)
+
+		if !t1.nil? && !t2.nil?
+			game.move(t1, t2)
+		end
+
+		render(game)
+
+		if game.won?
+			puts "Congratulations! You've won!"
+			break
+		end
+
+		
+		
+	end	
+end
+
+main
