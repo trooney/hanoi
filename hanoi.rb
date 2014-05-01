@@ -66,27 +66,27 @@ class Tower
 	end
 
 	def top
-		@rings.last
+		rings.last
 	end
 	
 	def add(ring)
-		Tower.new(@height, @rings + [ring])
+		Tower.new(height, rings + [ring])
 	end
 
 	def remove
-		Tower.new(@height, @rings[0..-2])
+		Tower.new(height, rings[0..-2])
 	end
 
 	def ring_count
-		@rings.length
+		rings.length
 	end
 
 	def full?
-		@height == @rings.length
+		height == rings.length
 	end
 
 	def sorted?
-		@rings == @rings.sort.reverse
+		rings == rings.sort.reverse
 	end
 
 end
@@ -148,7 +148,7 @@ end
 
 class Game 
 
-	attr_reader :height, :towers, :board, :move_counter
+	attr_reader :height, :towers, :board, :move_counter, :enforce_order
 
 	def initialize(height = 8, towers = 3, enforce_order = true)
 		@height = height
@@ -161,12 +161,12 @@ class Game
 
 	def move(t1, t2)
 		@move_counter += 1
-		@board = board.move(t1, t2, @enforce_order)
+		@board = board.move(t1, t2, enforce_order)
 		self
 	end
 
 	def won?
-		@board.won?
+		board.won?
 	end
 
 	def self.create_board(height, towers)
@@ -193,25 +193,27 @@ end
 
 class Solver
 
+	attr_reader :game
+
 	def initialize(game, delay = 0)
 		@game = game
 	end
 	
 	def solve(&block)
-		move_tower(@game.height, 0, 1, 2, &block)
+		move_tower(game.height, 0, 1, 2, &block)
 	end
 
 	def move_tower(rings, t_start, t_finish, t_temp, &block)
 		if rings == 1
-			@game = @game.move(t_start, t_finish)
-			yield(@game) if block_given?
-			@game
+			@game = game.move(t_start, t_finish)
+			yield(game) if block_given?
+			game
 		else
 			@game = move_tower(rings - 1, t_start, t_temp, t_finish, &block)
-			@game = @game.move(t_start, t_finish)
-			yield(@game) if block_given?
+			@game = game.move(t_start, t_finish)
+			yield(game) if block_given?
 			@game = move_tower(rings - 1, t_temp, t_finish, t_start, &block)
-			@game
+			game
 		end
 	end
 
