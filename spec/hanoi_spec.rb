@@ -25,12 +25,12 @@ describe Tower do
 	end
 
 	context "#sorted?" do
-		it "#sorted?" do
+		it "is true when sorted" do
 			tower = Tower.new(2, [2, 1])
 			expect(tower.sorted?).to eq(true)
 		end
 
-		it "#sorted? is false when unsorted" do
+		it "is false when unsorted" do
 			tower = Tower.new(2, [1, 2])
 			expect(tower.sorted?).to eq(false)
 		end
@@ -160,33 +160,15 @@ describe View do
 		end
 	end
 
-	# context "#render_board" do
-	# 	it "renders a board with 1 tower and 1 ring" do
-	# 		board = Board.new([tower_of_1])
-	# 		result = View.render_board(board)
-	# 		expect(result).to eq("1")
-	# 	end
-	# 	it "renders a board with 1 tower and 2 rings" do
-	# 		board = Board.new([tower_of_2])
-	# 		result = View.render_board(board)
-	# 		expect(result).to eq("1\n2")
-	# 	end
-	# 	it "renders a board with 2 tower and 2 rings" do
-	# 		board = Board.new([tower_of_1, tower_of_1])
-	# 		result = View.render_board(board)
-	# 		expect(result).to eq("1 1")
-	# 	end
-	# 	it "renders a board with 2 tower and 4 rings" do
-	# 		board = Board.new([tower_of_2, tower_of_2])
-	# 		result = View.render_board(board)
-	# 		expect(result).to eq("1 1\n2 2")
-	# 	end
-	# 	it "renders a board with 2 tower and 3 rings" do
-	# 		board = Board.new([tower_of_2, tower_of_1])
-	# 		result = View.render_board(board)
-	# 		expect(result).to eq("1 |\n2 1")
-	# 	end
-	# end
+	context "#render_board" do
+		it "must contain letters" do
+			board = Board.new([tower_of_1, tower_of_1])
+			result = View.render_board(board)
+
+			# We don't need no stinkin' unit test!
+			expect(result.length > 0).to eq(true)
+		end
+	end
 	
 end
 
@@ -223,19 +205,27 @@ describe Solver do
 	let (:simple_game) { Game.new(1, 3) }
 	let (:normal_game) { Game.new(3, 3) }
 
-	it "#solve acts on the board" do
-		game = Solver.new(simple_game).solve
+	context "#solve" do
+		it "calls a block with the game as a parameter for each step" do
+			game = Solver.new(simple_game).solve do |game|
+				expect(game.class).to eq(Game)
+			end
+		end
 
-		board = game.board
+		it "acts on the board" do
+			game = Solver.new(simple_game).solve
 
-		expect(board.rings_on_tower(0)).to eq(0)
-		expect(board.rings_on_tower(1)).to eq(1)
+			board = game.board
+
+			expect(board.rings_on_tower(0)).to eq(0)
+			expect(board.rings_on_tower(1)).to eq(1)
+		end
+
+		it "can win a game" do
+			game = Solver.new(normal_game).solve
+
+			expect(game.won?).to eq(true)
+		end
 	end
-
-	it "#solve solves a board" do
-		game = Solver.new(normal_game).solve
-
-		expect(game.won?).to eq(true)
-	end
-
+	
 end
