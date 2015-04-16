@@ -10,7 +10,7 @@ def main
 
 	game = Solver.new(game).solve do |game|
 		render(game)
-		sleep(0.4)
+		sleep(0.3)
 	end
 	
 	puts "Automated run complete. Goodbye!"

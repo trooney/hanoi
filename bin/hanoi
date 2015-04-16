@@ -4,9 +4,9 @@ require File.expand_path("../../hanoi", __FILE__)
 require File.expand_path("../../hanoi_helpers", __FILE__)
 
 def main
-	game = Game.new(2, 3)
+	game = Game.new(3, 3)
 	
-	render(game)
+	render(game, true)
 
 	while true
 		input = gets.chomp
@@ -22,7 +22,7 @@ def main
 			game.move(t1, t2)
 		end
 
-		render(game)
+		render(game, true)
 
 		if game.won?
 			puts "Congratulations! You've won!"
